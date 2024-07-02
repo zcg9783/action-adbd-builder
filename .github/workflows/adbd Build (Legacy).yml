@@ -19,6 +19,7 @@ on:
       DEBUG:
         description: 'Give me a shell to customize my adbd'
         required: true
+        default: false
         type: boolean
 jobs:
   build:
@@ -98,7 +99,7 @@ jobs:
       continue-on-error: true
 
     - name: Tmate SSH - Customize your adbd
-      if: ${{ github.event.inputs.DEBUG }}
+      if: ${{ inputs.DEBUG_enabled }}
       uses: mxschmitt/action-tmate@v3
     
     - name: Building adbd
