@@ -16,6 +16,10 @@ on:
         description: 'DEVICE_ARCH'
         required: true
         default: 'arm'
+      DEBUG:
+        description: 'Give me a shell to customize my adbd'
+        required: true
+        type: boolean
 jobs:
   build:
     if: github.event.repository.owner.id == github.event.sender.id
@@ -93,7 +97,8 @@ jobs:
         # sudo ln -s /usr/bin/python3 /usr/bin/python3
       continue-on-error: true
 
-    - name: Setup tmate session
+    - name: Tmate SSH - Customize your adbd
+      if: ${{ github.event.inputs.DEBUG }}
       uses: mxschmitt/action-tmate@v3
     
     - name: Building adbd
@@ -103,9 +108,6 @@ jobs:
         lunch aosp_${{ github.event.inputs.DEVICE_ARCH }}-eng && make clean && make adbd -j$(nproc --all)
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
-
     - name: Upload to Release
       uses: softprops/action-gh-release@v2
       with:
@@ -114,9 +116,7 @@ jobs:
         tag_name: ${{ github.run_id }}
         body: |
           Manifest: ${{ github.event.inputs.MANIFEST_BRANCH }}
-          Device: ${{ github.event.inputs.DEVICE_NAME }}
-          Device tree: ${{ github.event.inputs.DEVICE_TREE_URL }}
-          Target: ${{ github.event.inputs.BUILD_TARGET }}.img
+          Arch: ${{ github.event.inputs.DEVICE_ARCH }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
