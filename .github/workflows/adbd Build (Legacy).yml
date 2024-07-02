@@ -1,4 +1,4 @@
-name: Recovery Build (Legacy)
+name: adbd Build (Legacy)
 permissions:
   contents: write
 on:
