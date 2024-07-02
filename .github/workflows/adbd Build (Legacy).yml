@@ -12,32 +12,10 @@ on:
         description: 'MANIFEST_BRANCH'
         required: true
         default: 'android-7.1.2_r39'
-      DEVICE_TREE_URL:
-        description: 'DEVICE_TREE_URL'
+      DEVICE_ARCH:
+        description: 'DEVICE_ARCH'
         required: true
-        default: 'https://github.com/zh-xijun/twrp_device_'
-      DEVICE_TREE_BRANCH:
-        description: 'DEVICE_TREE_BRANCH'
-        required: true
-        default: 'twrp-7.1'
-      DEVICE_PATH:
-        description: 'DEVICE_PATH'
-        required: true
-        default: 'device/'
-      COMMON_TREE_URL:
-        description: 'COMMON_TREE_URL (if no common tree, leave blank)'
-        required: false
-      COMMON_PATH:
-        description: 'COMMON_PATH (if no common tree, leave blank)'
-        required: false
-      DEVICE_NAME:
-        description: 'DEVICE_NAME'
-        required: true
-        default: ''
-      MAKEFILE_NAME:
-        description: 'MAKEFILE_NAME'
-        required: true
-        default: 'omni_'
+        default: 'arm'
 jobs:
   build:
     if: github.event.repository.owner.id == github.event.sender.id
@@ -50,12 +28,7 @@ jobs:
         echo "::group::User Environment Variables"
         echo "Manifest URL: ${{ github.event.inputs.MANIFEST_URL }}"
         echo "Manifest Branch: ${{ github.event.inputs.MANIFEST_BRANCH }}"
-        echo "Device Tree URL: ${{ github.event.inputs.DEVICE_TREE_URL }}"
-        echo "Device Tree Branch: ${{ github.event.inputs.DEVICE_TREE_BRANCH }}"
-        echo "Device Path: ${{ github.event.inputs.DEVICE_PATH }}"
-        echo "Device Name: ${{ github.event.inputs.DEVICE_NAME }}"
-        echo "Makefile Name: ${{ github.event.inputs.MAKEFILE_NAME }}"
-        echo "Build Target: ${{ github.event.inputs.BUILD_TARGET }}.img"
+        echo "Device Arch: ${{ github.event.inputs.DEVICE_ARCH }}"
         echo "::endgroup::"
  
     # You might want to Checkout your repo first, but not mandatory
@@ -106,26 +79,6 @@ jobs:
       run: |
         repo sync -j$(nproc --all) --force-sync
       working-directory: workspace
-      
-    - name: Clone device tree
-      run: |
-        git clone ${{ github.event.inputs.DEVICE_TREE_URL }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} ./${{ github.event.inputs.DEVICE_PATH }}
-      working-directory: ${{ steps.pwd.outputs.workspace-folder }}
-
-    - name: Clone common tree
-      if: |
-        github.event.inputs.COMMON_TREE_URL != null
-        && github.event.inputs.COMMON_PATH != null
-      run: |
-        git clone ${{ github.event.inputs.COMMON_TREE_URL }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} ./${{ github.event.inputs.COMMON_PATH }}
-      working-directory: ${{ steps.pwd.outputs.workspace-folder }}
-
-    - name: Sync Device Dependencies
-      run: |
-        bash ${GITHUB_WORKSPACE}/scripts/convert.sh ${{ github.event.inputs.DEVICE_PATH }}/${{ steps.buildtree.outputs.value }}.dependencies
-        repo sync -j$(nproc --all)
-      working-directory: ${{ steps.pwd.outputs.workspace-folder }}
-      continue-on-error: true
 
     - name: Set Swap Space
       uses: pierotofy/set-swap-space@master
@@ -147,7 +100,7 @@ jobs:
       run: |
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
-        lunch ${{ github.event.inputs.MAKEFILE_NAME }}-eng && make clean && make adbd -j$(nproc --all)
+        lunch aosp_${{ github.event.inputs.DEVICE_ARCH }}-eng && make clean && make adbd -j$(nproc --all)
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
     - name: Setup tmate session
@@ -156,11 +109,8 @@ jobs:
     - name: Upload to Release
       uses: softprops/action-gh-release@v2
       with:
-        files: | 
-          workspace/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_TARGET }}.img
-          workspace/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.zip
-          workspace/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*vendor*.img
-        name: ${{ github.event.inputs.DEVICE_NAME }}-${{ github.run_id }}
+        files: workspace/out/target/product/aosp*/root/sbin/adbd
+        name: ${{ github.event.inputs.MANIFEST_BRANCH }}-${{ github.event.inputs.DEVICE_ARCH }}-${{ github.run_id }}
         tag_name: ${{ github.run_id }}
         body: |
           Manifest: ${{ github.event.inputs.MANIFEST_BRANCH }}
