@@ -61,9 +61,10 @@ jobs:
 
     - name: Install Java
       run: |
-        wget https://repo.huaweicloud.com/java/jdk/7u80-b15/jdk-7u80-linux-x64.tar.gz -O 1.tar.gz
-        tar -xvzf 1.tar.gz -C /github/home
-        echo "PATH=/github/home/jdk1.7.0_80/bin:$PATH" >> "$GITHUB_ENV"
+        wget https://repo.huaweicloud.com/java/jdk/6u45-b06/jdk-6u45-linux-x64.bin -O 1
+        chmod 755 1 && ./1
+        echo "PATH=/github/home/jdk1.6.0_45/bin:$PATH" >> "$GITHUB_ENV"
+      working-directory: /github/home
 
 #        wget https://download.java.net/openjdk/jdk7u75/ri/jdk_ri-7u75-b13-linux-x64-18_dec_2014.tar.gz -O 1.tar.gz
 #        echo "PATH=/github/home/java-se-7u75-ri/bin:$PATH" >> "$GITHUB_ENV"
@@ -123,7 +124,7 @@ jobs:
       if: ${{ inputs.DEBUG_enabled }}
       uses: mxschmitt/action-tmate@v3.13
 
-    - name: Building recovery
+    - name: Building adbd
       shell: bash
       run: |
         source build/envsetup.sh
