@@ -71,6 +71,21 @@ jobs:
 #      with:
 #        java-version: 1.7
 
+    - name: Install Make 3.81
+      run: |
+        wget https://ftp.gnu.org/gnu/make/make-3.81.tar.gz
+        tar -xvzf make-3.81.tar.gz
+        cd make-3.81
+        ./configure
+        sed -i '232 i # define __alloca       alloca' glob/glob.c
+        make
+        sudo make install
+        sudo cp make /usr/bin/make
+
+        echo "::group::Make version"
+        make -version
+        echo "::endgroup::"
+
     - name: Install repo
       run: |
         sudo ln -sf /usr/bin/python3 /usr/bin/python
