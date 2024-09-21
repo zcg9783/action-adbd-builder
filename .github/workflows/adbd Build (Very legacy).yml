@@ -121,7 +121,7 @@ jobs:
         sudo ln -sf /usr/bin/python2.7 /usr/bin/python
 
     - name: Tmate SSH - Customize your adbd
-      if: ${{ inputs.DEBUG_enabled }}
+      if: ${{ inputs.DEBUG }}
       uses: mxschmitt/action-tmate@v3.13
 
     - name: Building adbd
