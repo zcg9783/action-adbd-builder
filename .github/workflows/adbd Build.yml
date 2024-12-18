@@ -15,7 +15,7 @@ on:
       DEVICE_ARCH:
         description: 'DEVICE_ARCH'
         required: true
-        default: 'arm'
+        default: 'arm64'
       DEBUG:
         description: 'Give me a shell to customize my adbd'
         required: true
