@@ -24,7 +24,7 @@ on:
 jobs:
   build:
     if: github.event.repository.owner.id == github.event.sender.id
-    runs-on: ubuntu-21.04
+    runs-on: ubuntu-22.04
     permissions:
       contents: write
     steps:
@@ -48,27 +48,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt -y upgrade
-        sudo dpkg --add-architecture i386
-        sudo apt update -y
-        sudo apt install -y software-properties-common
-        sudo add-apt-repository -y ppa:deadsnakes/ppa
-        sudo apt update -y
-        sudo apt install -y \
-        gperf gcc-multilib g++-multilib \
-        libc6-dev:i386 libncurses-dev:i386 \
-        libx11-dev libgl1-mesa-dev libxml2-utils \
-        xsltproc bc ccache liblz4-tool libsdl1.2-dev \
-        libxml2 lzop pngcrush schedtool squashfs-tools \
-        imagemagick libbz2-dev lzma ncftp qemu-user-static \
-        libssl-dev flex bison \
-        libwxgtk3.2-dev \
-        libreadline-dev:i386 \
-        zlib1g-dev:i386 \
-        python2.7
-        sudo ln -sf /usr/bin/python2.7 /usr/bin/python
-        wget http://archive.ubuntu.com/ubuntu/pool/main/n/ncurses/libncurses5_6.2-0ubuntu2_amd64.deb
-        sudo dpkg -i libncurses5_6.2-0ubuntu2_amd64.deb || true
-        sudo apt --fix-broken install -y
+        sudo apt -y install gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib libc6-dev lib32ncurses5-dev x11proto-core-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libwxgtk3.0-gtk3-dev libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev libncurses5 python3
 
     - name: Install OpenJDK
       uses: actions/setup-java@v3
@@ -104,13 +84,6 @@ jobs:
       run: |
         repo sync -j$(nproc --all) --force-sync
       working-directory: workspace
-      
-    - name: Patch adbd_auth_verify
-      run: |
-        ADB_AUTH_PATH="system/core/adb/adbd_auth.cpp"
-        sed -i '/bool adbd_auth_verify([^{]*{/,/^}/ {
-            /return/s/.*/    return true;/
-        }' "$ADB_AUTH_PATH"
 
     - name: Set Swap Space
       uses: pierotofy/set-swap-space@master
