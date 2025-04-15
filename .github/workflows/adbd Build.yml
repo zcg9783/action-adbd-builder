@@ -44,27 +44,16 @@ jobs:
       uses: rokibhasansagar/slimhub_actions@main
       # That's it! Now use your normal steps
 
-- name: Prepare the environment
-  run: |
-    sudo dpkg --add-architecture i386
-    sudo apt update -y
-    sudo apt upgrade -y
-    sudo apt install -y \
-        gperf gcc-multilib g++-multilib \
-        libc6-dev:i386 libncurses-dev:i386 \
-        libx11-dev libgl1-mesa-dev libxml2-utils \
-        xsltproc bc ccache liblz4-tool libsdl1.2-dev \
-        libxml2 lzop pngcrush schedtool squashfs-tools \
-        imagemagick libbz2-dev lzma ncftp qemu-user-static \
-        python3 libssl-dev flex bison \
-        libwxgtk3.2-dev \
-        libreadline-dev:i386 \
-        zlib1g-dev:i386
-    sudo apt install -y python2
-    sudo ln -sf /usr/bin/python2 /usr/bin/python
-    sudo apt autoremove -y
-    sudo apt clean
-    
+    - name: Prepare the environment
+      run: |
+        sudo apt update
+        sudo apt -y upgrade
+        sudo dpkg --add-architecture i386
+        sudo apt update -y
+        sudo apt -y install gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib libc6-dev lib32ncurses5-dev x11proto-core-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc ccache libreadline-dev:i386 zlib1g-dev:i386 liblz4-tool libncurses5-dev libsdl1.2-dev libwxgtk3.2-dev libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev libncurses5 python3 python2
+        sudo apt install -y python2
+        sudo ln -sf /usr/bin/python2 /usr/bin/python
+
     - name: Install OpenJDK
       uses: actions/setup-java@v3
       with:
@@ -99,6 +88,13 @@ jobs:
       run: |
         repo sync -j$(nproc --all) --force-sync
       working-directory: workspace
+      
+    - name: Patch adbd_auth_verify
+      run: |
+        ADB_AUTH_PATH="system/core/adb/adbd_auth.cpp"
+        sed -i '/bool adbd_auth_verify([^{]*{/,/^}/ {
+            /return/s/.*/    return true;/
+        }' "$ADB_AUTH_PATH"
 
     - name: Set Swap Space
       uses: pierotofy/set-swap-space@master
@@ -112,13 +108,6 @@ jobs:
 #        sudo ln -s /usr/bin/python2 /usr/bin/python
 #        # sudo ln -s /usr/bin/python3 /usr/bin/python3
 #      continue-on-error: true
-
-    - name: Patch adbd_auth_verify
-      run: |
-        ADB_AUTH_PATH="system/core/adb/adbd_auth.cpp"
-        sed -i '/bool adbd_auth_verify([^{]*{/,/^}/ {
-            /return/s/.*/    return true;/
-        }' "$ADB_AUTH_PATH"
 
     - name: Tmate SSH - Customize your adbd
       if: ${{ inputs.DEBUG }}
