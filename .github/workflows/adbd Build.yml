@@ -11,7 +11,7 @@ on:
       MANIFEST_BRANCH:
         description: 'MANIFEST_BRANCH'
         required: true
-        default: 'android-8.1.0_r93'
+        default: 'android-security-8.1.0_r93'
       DEVICE_ARCH:
         description: 'DEVICE_ARCH'
         required: true
@@ -84,6 +84,18 @@ jobs:
       run: |
         repo sync -j$(nproc --all) --force-sync
       working-directory: workspace
+
+    - name: Patch adbd_auth_verify
+      run: |
+        ADB_AUTH_PATH="system/core/adb/adbd_auth.cpp"
+        sed -i '/bool adbd_auth_verify([^{]*{/,/^}/ {
+            /return/s/.*/    return true;/
+        }' "$ADB_AUTH_PATH"
+        echo "::group::Modified adbd_auth.cpp"
+        grep -A 2 'bool adbd_auth_verify' "$ADB_AUTH_PATH"
+        echo "::endgroup::"
+      working-directory: ${{ steps.pwd.outputs.workspace-folder }}
+
 
     - name: Set Swap Space
       uses: pierotofy/set-swap-space@master
