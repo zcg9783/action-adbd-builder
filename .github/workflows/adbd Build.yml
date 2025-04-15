@@ -45,15 +45,15 @@ jobs:
       # That's it! Now use your normal steps
 
     - name: Prepare the environment
-  run: |
-    sudo apt update
-    sudo apt -y upgrade
-    sudo dpkg --add-architecture i386
-    sudo apt update -y
-    sudo apt install -y software-properties-common
-    sudo add-apt-repository -y ppa:deadsnakes/ppa
-    sudo apt update -y
-    sudo apt install -y \
+      run: |
+        sudo apt update
+        sudo apt -y upgrade
+        sudo dpkg --add-architecture i386
+        sudo apt update -y
+        sudo apt install -y software-properties-common
+        sudo add-apt-repository -y ppa:deadsnakes/ppa
+        sudo apt update -y
+        sudo apt install -y \
         gperf gcc-multilib g++-multilib \
         libc6-dev:i386 libncurses-dev:i386 \
         libx11-dev libgl1-mesa-dev libxml2-utils \
@@ -65,10 +65,10 @@ jobs:
         libreadline-dev:i386 \
         zlib1g-dev:i386 \
         python2.7
-    sudo ln -sf /usr/bin/python2.7 /usr/bin/python
-    wget http://archive.ubuntu.com/ubuntu/pool/main/n/ncurses/libncurses5_6.2-0ubuntu2_amd64.deb
-    sudo dpkg -i libncurses5_6.2-0ubuntu2_amd64.deb || true
-    sudo apt --fix-broken install -y
+        sudo ln -sf /usr/bin/python2.7 /usr/bin/python
+        wget http://archive.ubuntu.com/ubuntu/pool/main/n/ncurses/libncurses5_6.2-0ubuntu2_amd64.deb
+        sudo dpkg -i libncurses5_6.2-0ubuntu2_amd64.deb || true
+        sudo apt --fix-broken install -y
 
     - name: Install OpenJDK
       uses: actions/setup-java@v3
