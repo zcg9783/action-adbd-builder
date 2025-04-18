@@ -87,13 +87,9 @@ jobs:
 
     - name: Patch adbd_auth_verify
       run: |
-        ADB_AUTH_PATH="system/core/adb/adbd_auth.cpp"
-        sed -i '/bool adbd_auth_verify([^{]*{/,/^}/ {
-            /return/s/.*/    return true;/
-        }' "$ADB_AUTH_PATH"
-        echo "::group::Modified adbd_auth.cpp"
-        grep -A 2 'bool adbd_auth_verify' "$ADB_AUTH_PATH"
-        echo "::endgroup::"
+        sed -i '/^int adb_auth_verify(/,/^}/ {
+          s/return [^;]*;/return 1;/g
+        }' system/core/adb/adb_auth_client.c
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
 
