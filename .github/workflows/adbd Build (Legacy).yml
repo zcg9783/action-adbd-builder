@@ -103,6 +103,16 @@ jobs:
         sudo ln -sf /usr/bin/python2 /usr/bin/python
       continue-on-error: true
 
+    - name: Patch adb_auth.cpp
+      run: |
+        FILE_PATH="system/core/adb/adb_auth.cpp"
+        TARGET_FUNCTION="int adb_auth_verify"
+
+        echo "Patch $FILE_PATH"
+        sudo sed -i "/${TARGET_FUNCTION}(/,/^{/c\\${TARGET_FUNCTION}(const char* /*token*/, size_t /*token_size*/) {\n  return 1;\n}" $FILE_PATH
+        grep -A 2 "${TARGET_FUNCTION}(" $FILE_PATH
+      working-directory: ${{ steps.pwd.outputs.workspace-folder }}
+
     - name: Tmate SSH - Customize your adbd
       if: ${{ inputs.DEBUG }}
       uses: mxschmitt/action-tmate@v3
