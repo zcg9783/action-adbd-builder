@@ -95,14 +95,6 @@ jobs:
       with:
         swap-size-gb: 12
 
-    - name: Switch to Python2
-      run: |
-        sudo add-apt-repository universe -y
-        sudo apt update
-        sudo apt install -y python2
-        sudo ln -sf /usr/bin/python2 /usr/bin/python
-      continue-on-error: true
-
     - name: Tmate SSH - Customize your adbd
       if: ${{ inputs.DEBUG }}
       uses: mxschmitt/action-tmate@v3
