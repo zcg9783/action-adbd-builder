@@ -114,12 +114,18 @@ jobs:
         make adbd -j$(nproc --all)
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
+    - name: Verify adbd path
+      run: |
+        echo "::group::Directory structure"
+        find workspace/out/target/product -name adbd -print
+        echo "::endgroup::"
+
+    # 修正后的上传步骤
     - name: Upload to Release
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          workspace/out/target/product/generic/root/sbin/adbd
-          workspace/out/target/product/generic/system/bin/adbd
+          workspace/out/target/product/generic_${{ github.event.inputs.DEVICE_ARCH }}/system/bin/adbd
         name: ${{ github.event.inputs.MANIFEST_BRANCH }}-${{ github.event.inputs.DEVICE_ARCH }}-${{ github.run_id }}
         tag_name: ${{ github.run_id }}
         body: |
