@@ -128,7 +128,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          workspace/out/target/product/generic/system/bin/adbd
+          workspace/out/target/product/generic_${{ github.event.inputs.DEVICE_ARCH }}/system/bin/adbd
         name: ${{ github.event.inputs.MANIFEST_BRANCH }}-${{ github.event.inputs.DEVICE_ARCH }}-${{ github.run_id }}
         tag_name: ${{ github.run_id }}
         body: |
