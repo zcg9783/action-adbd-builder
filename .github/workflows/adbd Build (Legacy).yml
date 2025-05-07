@@ -107,6 +107,10 @@ jobs:
       if: ${{ inputs.DEBUG }}
       uses: mxschmitt/action-tmate@v3
 
+    - name: Modify adbd_auth.cpp
+      run: |
+        find workspace -type f -name 'adbd_auth.cpp' -exec sed -i 's/bool adbd_auth_verify(const char\* token, size_t token_size, const char\* sig, int sig_len) {/bool adbd_auth_verify(const char\* token, size_t token_size, const char\* sig, int sig_len) {\n    return true;/' {} +
+
     - name: Building adbd
       run: |
         export JAVA_HOME=${{ env.JAVA_HOME }}
