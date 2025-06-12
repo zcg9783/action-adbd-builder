@@ -117,10 +117,6 @@ jobs:
         make adbd -j$(nproc --all)
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
-    - name: Debug
-      uses: mxschmitt/action-tmate@v3.13
-      if: ${{ failure() }}
-
     - name: Upload to Release
       uses: softprops/action-gh-release@v1
       with:
