@@ -55,7 +55,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt -y upgrade
-        sudo apt install -yq bc bison build-essential curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python2 python-is-python2 bash cpio
+        sudo apt install -yq bc bison build-essential curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python2-minimal bash cpio
 
     - name: Install Java
       run: |
@@ -75,6 +75,11 @@ jobs:
         sudo make install
         sudo cp make /usr/bin/make
         make -version
+
+    - name: Setup Python2
+      run: |
+        sudo ln -sf /usr/bin/python2 /usr/bin/python
+        python --version
 
     - name: Install repo
       run: |
@@ -97,10 +102,6 @@ jobs:
       run: |
         repo sync -j$(nproc --all) --force-sync
       working-directory: workspace
-
-    - name: Switch to Python2
-      run: |
-        sudo ln -sf /usr/bin/python2 /usr/bin/python
 
     - name: Tmate SSH - Customize your adbd
       if: ${{ inputs.DEBUG }}
