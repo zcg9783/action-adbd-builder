@@ -15,7 +15,7 @@ on:
       DEVICE_ARCH:
         description: 'DEVICE_ARCH'
         required: true
-        default: 'arm64'  
+        default: 'arm'  
       DEBUG:
         description: 'Give me a shell to customize my adbd'
         required: true
@@ -99,10 +99,6 @@ jobs:
       with:
         swap-size-gb: 12
 
-    - name: Tmate SSH - Customize your adbd
-      if: ${{ inputs.DEBUG }}
-      uses: mxschmitt/action-tmate@v3
-
     - name: Building adbd
       run: |
         export JAVA_HOME=${{ env.JAVA_HOME }}
@@ -127,8 +123,7 @@ jobs:
     - name: Upload to Release
       uses: softprops/action-gh-release@v2
       with:
-        files: |
-          workspace/out/target/product/generic_${{ github.event.inputs.DEVICE_ARCH }}/system/bin/adbd
+        files: workspace/out/**
         name: ${{ github.event.inputs.MANIFEST_BRANCH }}-${{ github.event.inputs.DEVICE_ARCH }}-${{ github.run_id }}
         tag_name: ${{ github.run_id }}
         body: |
