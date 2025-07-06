@@ -99,27 +99,34 @@ jobs:
       with:
         swap-size-gb: 12
 
-    - name: Building com.android.shell.apex
+    - name: Build Shell APEX
       run: |
         export JAVA_HOME=${{ env.JAVA_HOME }}
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
         lunch aosp_${{ github.event.inputs.DEVICE_ARCH }}-eng
-        make clean
-        make com.android.shell.apex -j$(nproc --all)
+        
+        # 先构建依赖项
+        make libadb adbd -j$(nproc --all)
+        
+        # 构建Shell APEX
+        make com.android.shell -j$(nproc --all)
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
-    - name: Verify APEX path
+    - name: Find APEX files
       run: |
-        echo "::group::APEX files"
-        find workspace/out/target/product -name "com.android.shell*.apex" -print
+        echo "::group::Searching for APEX files"
+        find ${{ steps.pwd.outputs.workspace-folder }}/out/target/product -name "com.android.shell*.apex" -print
         echo "::endgroup::"
+        
+        # 创建包含APEX文件的目录
+        mkdir -p apex_output
+        find ${{ steps.pwd.outputs.workspace-folder }}/out/target/product -name "com.android.shell*.apex" -exec cp {} apex_output/ \;
+        echo "APEX_FOLDER=apex_output" >> $GITHUB_ENV
 
     - name: Upload APEX Artifact
       uses: actions/upload-artifact@v4
       with:
         name: adbd_apex_${{ github.event.inputs.MANIFEST_BRANCH }}_${{ github.event.inputs.DEVICE_ARCH }}
-        path: |
-          ${{ steps.pwd.outputs.workspace-folder }}/out/target/product/*/system/apex/com.android.shell*.apex
-          ${{ steps.pwd.outputs.workspace-folder }}/out/target/product/*/symbols/system/apex/com.android.shell.apex
+        path: ${{ env.APEX_FOLDER }}
         retention-days: 1
