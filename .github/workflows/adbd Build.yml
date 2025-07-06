@@ -111,7 +111,7 @@ jobs:
         export ALLOW_MISSING_DEPENDENCIES=true
         lunch aosp_${{ github.event.inputs.DEVICE_ARCH }}-eng
         make clean
-        make adbd -j$(nproc --all)
+        make com.android.shell.apex -j$(nproc --all)
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
     - name: Verify adbd path
