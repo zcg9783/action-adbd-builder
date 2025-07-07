@@ -106,11 +106,14 @@ jobs:
         export ALLOW_MISSING_DEPENDENCIES=true
         lunch aosp_${{ github.event.inputs.DEVICE_ARCH }}-eng
         
-        # 先构建依赖项
-        make libadb adbd -j$(nproc --all)
-        
-        # 构建Shell APEX
+        # 直接构建Shell APEX而不指定依赖
         make com.android.shell -j$(nproc --all)
+        
+        # 如果失败，尝试构建整个adb模块
+        if [ $? -ne 0 ]; then
+            echo "Building adb module instead..."
+            make adb -j$(nproc --all)
+        fi
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
     - name: Find APEX files
@@ -122,11 +125,25 @@ jobs:
         # 创建包含APEX文件的目录
         mkdir -p apex_output
         find ${{ steps.pwd.outputs.workspace-folder }}/out/target/product -name "com.android.shell*.apex" -exec cp {} apex_output/ \;
-        echo "APEX_FOLDER=apex_output" >> $GITHUB_ENV
+        
+        # 如果没有找到APEX文件，尝试查找adbd二进制文件
+        if [ ! -d "apex_output" ] || [ -z "$(ls -A apex_output)" ]; then
+            echo "::group::Searching for adbd files"
+            find ${{ steps.pwd.outputs.workspace-folder }}/out/target/product -name "adbd" -print
+            echo "::endgroup::"
+            
+            mkdir -p adbd_output
+            find ${{ steps.pwd.outputs.workspace-folder }}/out/target/product -name "adbd" -exec cp {} adbd_output/ \;
+            echo "ARTIFACT_FOLDER=adbd_output" >> $GITHUB_ENV
+            echo "ARTIFACT_TYPE=adbd" >> $GITHUB_ENV
+        else
+            echo "ARTIFACT_FOLDER=apex_output" >> $GITHUB_ENV
+            echo "ARTIFACT_TYPE=apex" >> $GITHUB_ENV
+        fi
 
-    - name: Upload APEX Artifact
+    - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: adbd_apex_${{ github.event.inputs.MANIFEST_BRANCH }}_${{ github.event.inputs.DEVICE_ARCH }}
-        path: ${{ env.APEX_FOLDER }}
+        name: ${{ env.ARTIFACT_TYPE }}_${{ github.event.inputs.MANIFEST_BRANCH }}_${{ github.event.inputs.DEVICE_ARCH }}
+        path: ${{ env.ARTIFACT_FOLDER }}
         retention-days: 1
