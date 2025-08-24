@@ -45,17 +45,16 @@ jobs:
     - name: Install Node.js 12 (compatible with Ubuntu 18.04)
       run: |
         apt-get update
-        curl -sL https://deb.nodesource.com/setup_12.x | bash -
+        apt-get install -y curl
+        curl -fsSL https://deb.nodesource.com/setup_12.x | bash -
         apt-get install -y nodejs
         node --version
-        npm --version
 
     - name: Check Out
       uses: actions/checkout@v3
 
     - name: Prepare the environment
       run: |
-        apt-get update
         apt-get install -y software-properties-common
         add-apt-repository ppa:openjdk-r/ppa -y
         apt-get update
