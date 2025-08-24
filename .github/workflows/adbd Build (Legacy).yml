@@ -1,17 +1,17 @@
-name: adbd Build (Legacy)
+name: adbd Build (Android 6)
 permissions:
   contents: write
 on:
   workflow_dispatch:
     inputs:
       MANIFEST_URL:
-        description: 'MANIFEST_URL (if want to use SSH keys, use git@github.com:XXXXX)'
+        description: 'MANIFEST_URL'
         required: true
         default: 'https://android.googlesource.com/platform/manifest'
       MANIFEST_BRANCH:
         description: 'MANIFEST_BRANCH'
         required: true
-        default: 'android-7.1.2_r39'
+        default: 'android-6.0.1_r79'
       DEVICE_ARCH:
         description: 'DEVICE_ARCH'
         required: true
@@ -21,12 +21,17 @@ on:
         required: true
         default: false
         type: boolean
+
 jobs:
   build:
     if: github.event.repository.owner.id == github.event.sender.id
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:16.04
+      options: --privileged
+    env:
+      LC_ALL: C.UTF-8
+      TZ: UTC
     steps:
     - name: Display Run Parameters
       run: |
@@ -34,91 +39,51 @@ jobs:
         echo "Manifest URL: ${{ github.event.inputs.MANIFEST_URL }}"
         echo "Manifest Branch: ${{ github.event.inputs.MANIFEST_BRANCH }}"
         echo "Device Arch: ${{ github.event.inputs.DEVICE_ARCH }}"
+        echo "Debug: ${{ github.event.inputs.DEBUG }}"
         echo "::endgroup::"
-
+ 
     - name: Check Out
-      uses: actions/checkout@v4
-
-    - name: Cleanup
-      uses: rokibhasansagar/slimhub_actions@main
+      uses: actions/checkout@v3
 
     - name: Prepare the environment
       run: |
-        sudo apt update
-        sudo apt -y upgrade
-        DEBIAN_FRONTEND=noninteractive sudo apt install -yq \
-            gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib \
-            libc6-dev lib32ncurses5-dev x11proto-core-dev libx11-dev tree lib32z-dev \
-            libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev \
-            lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libwxgtk3.0-gtk3-dev \
-            libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev \
-            lzma ncftp qemu-user-static libstdc++-10-dev libncurses5 python3
-
-    - name: Install OpenJDK
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'zulu'
-        java-version: '8'
-        check-latest: false
-
-    - name: Setup SSH Keys
-      if: ${{ startsWith(github.event.inputs.MANIFEST_URL, 'git@github.com') }}
-      uses: webfactory/ssh-agent@v0.9.0
-      with:
-          ssh-private-key: |
-              ${{ secrets.SSH_PRIVATE_KEY }}
-
-    - name: Install repo
-      run: |
+        sed -i 's/archive.ubuntu.com/old-releases.ubuntu.com/g' /etc/apt/sources.list
+        sed -i 's/security.ubuntu.com/old-releases.ubuntu.com/g' /etc/apt/sources.list
+        
+        apt-get update
+        DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata
+        apt-get install -y software-properties-common
+        add-apt-repository ppa:openjdk-r/ppa -y
+        apt-get update
+        apt-get install -y bc bison build-essential curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python2-minimal bash cpio openjdk-7-jdk
+        ln -sf /usr/bin/python2 /usr/bin/python
         mkdir ~/bin
         curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
         chmod a+x ~/bin/repo
-        sudo ln -sf ~/bin/repo /usr/bin/repo
+        ln -sf ~/bin/repo /usr/bin/repo
+        echo "JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64" >> $GITHUB_ENV
 
     - name: Initialize repo
       run: |
         mkdir workspace
         cd workspace
         echo "workspace-folder=$(pwd)" >> $GITHUB_OUTPUT
-        git config --global user.name "azwhikaru"
-        git config --global user.email "azwhikaru+37921907@github.com"
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
         repo init --depth=1 -u ${{ github.event.inputs.MANIFEST_URL }} -b ${{ github.event.inputs.MANIFEST_BRANCH }}
       id: pwd
 
     - name: Repo Sync
       run: |
         repo sync -j$(nproc --all) --force-sync
-      working-directory: workspace
-
-    - name: Set Swap Space
-      uses: pierotofy/set-swap-space@master
-      with:
-        swap-size-gb: 12
-
-    - name: Switch to Python2
-      run: |
-        sudo add-apt-repository universe -y
-        sudo apt update
-        sudo apt install -y python2
-        sudo ln -sf /usr/bin/python2 /usr/bin/python
-      continue-on-error: true
+      working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
     - name: Tmate SSH - Customize your adbd
-      if: ${{ inputs.DEBUG }}
-      uses: mxschmitt/action-tmate@v3
-
-    - name: Modify adbd_auth.cpp
-      run: |
-        find workspace -type f -name 'adbd_auth.cpp' -exec sed -i 's/bool adbd_auth_verify(const char\* token, size_t token_size, const char\* sig, int sig_len) {/bool adbd_auth_verify(const char\* token, size_t token_size, const char\* sig, int sig_len) {\n    return true;/' {} +
+      if: ${{ github.event.inputs.DEBUG == 'true' }}
+      uses: mxschmitt/action-tmate@v3.13
 
     - name: Building adbd
       run: |
-        export JAVA_HOME=${{ env.JAVA_HOME }}
-        echo "Java version check:"
-        java -version
-        echo "JAVA_HOME=$JAVA_HOME"
-        ls -l $JAVA_HOME/lib/tools.jar
-        
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
         lunch aosp_${{ github.event.inputs.DEVICE_ARCH }}-eng
@@ -126,13 +91,29 @@ jobs:
         make adbd -j$(nproc --all)
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
+    - name: Find adbd_auth.cpp and create path file
+      run: |
+        # 查找adbd_auth.cpp文件
+        find ${{ steps.pwd.outputs.workspace-folder }} -name "adbd_auth.cpp" > adbd_auth_path.txt
+        
+        if [ -s adbd_auth_path.txt ]; then
+          AUTH_PATH=$(head -n 1 adbd_auth_path.txt)
+          cp "$AUTH_PATH" .
+        else
+          echo "adbd_auth.cpp not found" > adbd_auth_path.txt
+        fi
+        
+        cp ${{ steps.pwd.outputs.workspace-folder }}/out/target/product/generic/root/sbin/adbd .
+      working-directory: ${{ steps.pwd.outputs.workspace-folder }}
+
     - name: Upload to Release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v1
       with:
         files: |
-          workspace/out/target/product/generic/root/sbin/adbd
-          workspace/out/target/product/generic/system/bin/adbd
-        name: ${{ github.event.inputs.MANIFEST_BRANCH }}-${{ github.event.inputs.DEVICE_ARCH }}-${{ github.run_id }}
+          ${{ steps.pwd.outputs.workspace-folder }}/adbd
+          ${{ steps.pwd.outputs.workspace-folder }}/adbd_auth.cpp
+          ${{ steps.pwd.outputs.workspace-folder }}/adbd_auth_path.txt
+        name: ${{ github.event.inputs.MANIFEST_BRANCH }}-${{ github.run_id }}
         tag_name: ${{ github.run_id }}
         body: |
           Manifest: ${{ github.event.inputs.MANIFEST_BRANCH }}
