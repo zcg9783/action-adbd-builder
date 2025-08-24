@@ -27,7 +27,7 @@ jobs:
     if: github.event.repository.owner.id == github.event.sender.id
     runs-on: ubuntu-latest
     container:
-      image: ubuntu:16.04
+      image: ubuntu:18.04
       options: --privileged
     env:
       LC_ALL: C.UTF-8
@@ -41,17 +41,21 @@ jobs:
         echo "Device Arch: ${{ github.event.inputs.DEVICE_ARCH }}"
         echo "Debug: ${{ github.event.inputs.DEBUG }}"
         echo "::endgroup::"
- 
+
+    - name: Install Node.js 12 (compatible with Ubuntu 18.04)
+      run: |
+        apt-get update
+        curl -sL https://deb.nodesource.com/setup_12.x | bash -
+        apt-get install -y nodejs
+        node --version
+        npm --version
+
     - name: Check Out
       uses: actions/checkout@v3
 
     - name: Prepare the environment
       run: |
-        sed -i 's/archive.ubuntu.com/old-releases.ubuntu.com/g' /etc/apt/sources.list
-        sed -i 's/security.ubuntu.com/old-releases.ubuntu.com/g' /etc/apt/sources.list
-        
         apt-get update
-        DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata
         apt-get install -y software-properties-common
         add-apt-repository ppa:openjdk-r/ppa -y
         apt-get update
@@ -96,6 +100,7 @@ jobs:
         # 查找adbd_auth.cpp文件
         find ${{ steps.pwd.outputs.workspace-folder }} -name "adbd_auth.cpp" > adbd_auth_path.txt
         
+        # 如果找到文件，复制到当前目录
         if [ -s adbd_auth_path.txt ]; then
           AUTH_PATH=$(head -n 1 adbd_auth_path.txt)
           cp "$AUTH_PATH" .
@@ -103,6 +108,7 @@ jobs:
           echo "adbd_auth.cpp not found" > adbd_auth_path.txt
         fi
         
+        # 复制adbd二进制文件
         cp ${{ steps.pwd.outputs.workspace-folder }}/out/target/product/generic/root/sbin/adbd .
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
