@@ -25,10 +25,7 @@ on:
 jobs:
   build:
     if: github.event.repository.owner.id == github.event.sender.id
-    runs-on: ubuntu-latest
-    container:
-      image: ubuntu:18.04
-      options: --privileged
+    runs-on: ubuntu-20.04
     env:
       LC_ALL: C.UTF-8
       TZ: UTC
@@ -42,28 +39,34 @@ jobs:
         echo "Debug: ${{ github.event.inputs.DEBUG }}"
         echo "::endgroup::"
 
-    - name: Install Node.js 12 (compatible with Ubuntu 18.04)
-      run: |
-        apt-get update
-        apt-get install -y curl
-        curl -fsSL https://deb.nodesource.com/setup_12.x | bash -
-        apt-get install -y nodejs
-        node --version
-
     - name: Check Out
       uses: actions/checkout@v3
 
     - name: Prepare the environment
       run: |
-        apt-get install -y software-properties-common
-        add-apt-repository ppa:openjdk-r/ppa -y
-        apt-get update
-        apt-get install -y bc bison build-essential curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python2-minimal bash cpio openjdk-7-jdk
-        ln -sf /usr/bin/python2 /usr/bin/python
+        sudo apt-get update
+        sudo apt-get install -y software-properties-common
+        sudo add-apt-repository ppa:openjdk-r/ppa -y
+        sudo apt-get update
+        
+        # 尝试安装 OpenJDK 7，如果失败则手动安装
+        if ! sudo apt-get install -y openjdk-7-jdk; then
+          echo "OpenJDK 7 not available in repositories, installing manually..."
+          wget https://launchpad.net/~openjdk-r/+archive/ubuntu/ppa/+build/10906814/+files/openjdk-7-jdk_7u75-2.5.4-1~precise1_amd64.deb
+          wget https://launchpad.net/~openjdk-r/+archive/ubuntu/ppa/+build/10906814/+files/openjdk-7-jre_7u75-2.5.4-1~precise1_amd64.deb
+          wget https://launchpad.net/~openjdk-r/+archive/ubuntu/ppa/+build/10906814/+files/openjdk-7-jre-headless_7u75-2.5.4-1~precise1_amd64.deb
+          sudo dpkg -i openjdk-7-jre-headless_7u75-2.5.4-1~precise1_amd64.deb
+          sudo dpkg -i openjdk-7-jre_7u75-2.5.4-1~precise1_amd64.deb
+          sudo dpkg -i openjdk-7-jdk_7u75-2.5.4-1~precise1_amd64.deb
+          sudo apt-get install -f -y
+        fi
+        
+        sudo apt-get install -y bc bison build-essential curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python2-minimal bash cpio
+        sudo ln -sf /usr/bin/python2 /usr/bin/python
         mkdir ~/bin
         curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
         chmod a+x ~/bin/repo
-        ln -sf ~/bin/repo /usr/bin/repo
+        sudo ln -sf ~/bin/repo /usr/bin/repo
         echo "JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64" >> $GITHUB_ENV
 
     - name: Initialize repo
